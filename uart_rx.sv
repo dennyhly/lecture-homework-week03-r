@@ -27,12 +27,12 @@ clock_mul #(
 
 // CROSS CLOCK DOMAIN: The rx_ready flag should only be set 1 one for one source 
 // clock cycle. Use the cross clock domain technique discussed in class to handle this.
-logic sync_ff1, sync_ff2, rx_ready_flag;
+logic sync_ff1, sync_ff2;
 
 always @(posedge clk) begin
-    sync_ff1 <= rx_ready_flag;
+    sync_ff1 <= rx_ready;
     sync_ff2 <= sync_ff1;
-    rx_ready <= sync_ff1 ^ sync_ff2;
+    rx_ready <= sync_ff1 & sync_ff2;
 end
 
 // STATE MACHINE: Use the UART clock to drive that state machine that receves a byte from the rx signal
@@ -40,7 +40,7 @@ logic [2:0] rx_counter;
 
 always @(posedge uart_clk) begin
     case (state)
-        INIT: begin state <= IDLE; rx_counter <= 0; rx_ready_flag <= 0; rx_data <= 0; end
+        INIT: begin state <= IDLE; rx_counter <= 0; rx_ready <= 0; rx_data <= 0; end
 
         IDLE: begin 
             if (rx == 0) begin state <= RX_DATA; rx_counter <= 0;end
@@ -54,7 +54,7 @@ always @(posedge uart_clk) begin
         end
 
         STOP: begin
-            if (rx) begin state <= IDLE; rx_ready_flag <= ~rx_ready_flag; end
+            if (rx) begin state <= IDLE; rx_ready <= ~rx_ready; end
             else begin state <= STOP; end
         end
         default: state = INIT;
